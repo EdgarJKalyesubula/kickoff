@@ -211,7 +211,13 @@
 </head>
 <body>
 
-<!-- ═══════════ HEADER ═══════════ -->
+<!-- ═══════════ LOADER ═══════════ -->
+<div id="global-loader" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(11, 16, 26, 0.95);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity 0.5s ease;">
+  <div style="font-size:50px;animation:spin 1s linear infinite;">⚽</div>
+  <div class="font-oswald mt-3" style="letter-spacing:3px;font-size:16px;color:#fff;font-weight:600;">LOADING LIVE DATA</div>
+</div>
+<style>@keyframes spin { 100% { transform:rotate(360deg); } }</style>
+
 <header id="site-header">
   <div class="container-fluid h-100 px-3 d-flex align-items-center justify-content-between">
     <div class="d-flex align-items-center gap-2">
@@ -415,294 +421,27 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ═══════════ BETTING PARTNERS BY COUNTRY ═══════════
-// Replace affiliate URLs with your actual affiliate links
-const BETTING_PARTNERS = {
-  // Africa / East Africa
-  UG: { name:"Uganda",     currency:"UGX", partners:[
-    { name:"Betway Uganda",  logo:"🎯", bonus:"Get 100% on first deposit", tag:"Licensed by Uganda National Gaming Board", url:"https://www.betway.co.ug" },
-    { name:"SportPesa UG",   logo:"⚽", bonus:"Free bet on sign-up",        tag:"Licensed • Fast payouts",                  url:"https://www.sportpesa.co.ug" },
-    { name:"Betika Uganda",  logo:"🏆", bonus:"Bet UGX 1,000 get 1,000",   tag:"Mobile friendly • USSD available",          url:"https://www.betika.com" },
-  ]},
-  KE: { name:"Kenya",      currency:"KES", partners:[
-    { name:"SportPesa KE",   logo:"⚽", bonus:"100% Welcome Bonus",         tag:"#1 in Kenya • Licensed BCLB",              url:"https://www.sportpesa.ke" },
-    { name:"Betway Kenya",   logo:"🎯", bonus:"Get KES 5,000 free bet",     tag:"Licensed by BCLB",                         url:"https://www.betway.co.ke" },
-    { name:"Odibets",        logo:"🏆", bonus:"Bet KES 49 win KES 10,000",  tag:"Kenyan-owned platform",                    url:"https://www.odibets.com" },
-  ]},
-  TZ: { name:"Tanzania",   currency:"TZS", partners:[
-    { name:"Betway Tanzania",logo:"🎯", bonus:"100% first deposit bonus",   tag:"Licensed by Tanzania Gaming Board",        url:"https://www.betway.co.tz" },
-    { name:"SportPesa TZ",   logo:"⚽", bonus:"Welcome offer available",    tag:"Top rated in Tanzania",                    url:"https://www.sportpesa.co.tz" },
-  ]},
-  NG: { name:"Nigeria",    currency:"NGN", partners:[
-    { name:"Bet9ja",         logo:"🎯", bonus:"200% Welcome Bonus",         tag:"Nigeria's #1 bookmaker • Licensed",        url:"https://www.bet9ja.com" },
-    { name:"SportyBet NG",   logo:"⚽", bonus:"100% first deposit",         tag:"Fast withdrawal • Licensed by NLRC",       url:"https://www.sportybet.com" },
-    { name:"1xBet Nigeria",  logo:"🏆", bonus:"Up to NGN 100,000 bonus",    tag:"Wide market coverage",                     url:"https://www.1xbet.ng" },
-  ]},
-  GH: { name:"Ghana",      currency:"GHS", partners:[
-    { name:"Betway Ghana",   logo:"🎯", bonus:"GHS 50 free bet",            tag:"Licensed by GRA",                          url:"https://www.betway.com.gh" },
-    { name:"SportyBet GH",   logo:"⚽", bonus:"100% on first deposit",      tag:"Popular in Ghana",                         url:"https://www.sportybet.com" },
-  ]},
-  ZA: { name:"South Africa",currency:"ZAR", partners:[
-    { name:"Hollywoodbets",  logo:"🎬", bonus:"R25 sign-up bonus",          tag:"Trusted SA brand since 1999",              url:"https://www.hollywoodbets.net" },
-    { name:"Betway SA",      logo:"🎯", bonus:"R1,000 Welcome Bonus",       tag:"Licensed by Western Cape Gambling Board",  url:"https://www.betway.co.za" },
-    { name:"10bet SA",       logo:"⚽", bonus:"R200 free bet",              tag:"Licensed • Wide football coverage",        url:"https://www.10bet.co.za" },
-  ]},
-  // Europe
-  GB: { name:"United Kingdom", currency:"GBP", partners:[
-    { name:"bet365",         logo:"🎯", bonus:"Up to £30 in free bets",     tag:"Licensed by UK Gambling Commission",       url:"https://www.bet365.com" },
-    { name:"William Hill",   logo:"🏇", bonus:"£30 in free bets",           tag:"Est. 1934 • UKGC licensed",                url:"https://www.williamhill.com" },
-    { name:"Betfair",        logo:"🔄", bonus:"Bet £10 get £30",            tag:"Betting exchange • UKGC licensed",         url:"https://www.betfair.com" },
-  ]},
-  DE: { name:"Germany",    currency:"EUR", partners:[
-    { name:"Tipico",         logo:"🎯", bonus:"100% up to €100",            tag:"Licensed in Germany",                      url:"https://www.tipico.de" },
-    { name:"bwin",           logo:"⚽", bonus:"€30 free bet",               tag:"Licensed • German market leader",          url:"https://www.bwin.de" },
-  ]},
-  ES: { name:"Spain",      currency:"EUR", partners:[
-    { name:"bet365 Spain",   logo:"🎯", bonus:"Up to €30 free bets",        tag:"DGOJ Licensed",                            url:"https://www.bet365.es" },
-    { name:"Codere",         logo:"⚽", bonus:"€10 free bet",               tag:"Spanish operator • Licensed",              url:"https://www.codere.es" },
-  ]},
-  IT: { name:"Italy",      currency:"EUR", partners:[
-    { name:"Sisal",          logo:"🎯", bonus:"€25 free bet",               tag:"ADM Licensed • Italian brand",             url:"https://www.sisal.it" },
-    { name:"Snai",           logo:"⚽", bonus:"100% up to €50",             tag:"ADM Licensed",                             url:"https://www.snai.it" },
-  ]},
-  // Americas
-  US: { name:"United States", currency:"USD", partners:[
-    { name:"DraftKings",     logo:"🏈", bonus:"Bet $5 get $200",            tag:"Licensed in 20+ US states",                url:"https://www.draftkings.com" },
-    { name:"FanDuel",        logo:"🎯", bonus:"No sweat first bet up to $1000",tag:"Licensed sportsbook",                   url:"https://www.fanduel.com" },
-    { name:"BetMGM",         logo:"🦁", bonus:"First bet offer up to $1500", tag:"MGM licensed sportsbook",                 url:"https://www.betmgm.com" },
-  ]},
-  BR: { name:"Brazil",     currency:"BRL", partners:[
-    { name:"Betano Brasil",  logo:"⚽", bonus:"R$500 bônus de boas-vindas", tag:"Licenciada no Brasil",                     url:"https://www.betano.com.br" },
-    { name:"bet365 Brasil",  logo:"🎯", bonus:"Até R$500 em apostas grátis",tag:"Confiável e licenciada",                   url:"https://www.bet365.com.br" },
-  ]},
-  // Asia
-  IN: { name:"India",      currency:"INR", partners:[
-    { name:"Parimatch India",logo:"🏏", bonus:"₹12,000 welcome bonus",      tag:"Accepts INR • UPI supported",              url:"https://www.parimatch.in" },
-    { name:"10Cric",         logo:"🎯", bonus:"100% up to ₹10,000",         tag:"India-focused sportsbook",                 url:"https://www.10crics.com" },
-  ]},
-  // Restricted / unknown
-  DEFAULT: { name:"International", currency:"", partners:[
-    { name:"bet365",         logo:"🎯", bonus:"Bet £10 get £30 in free bets",tag:"Available in 200+ countries",             url:"https://www.bet365.com" },
-    { name:"1xBet",          logo:"⚽", bonus:"100% up to $100",             tag:"Wide international coverage",              url:"https://www.1xbet.com" },
-    { name:"Betway",         logo:"🏆", bonus:"Welcome bonus available",     tag:"Licensed in multiple jurisdictions",       url:"https://www.betway.com" },
-  ]},
-  // Restricted countries — online betting mostly illegal
+// ═══════════ SUPABASE INIT ═══════════
+const SUPABASE_URL = "https://lxdfhfluigyzzskjmisr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZGZoZmx1aWd5enpza2ptaXNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MjgzODcsImV4cCI6MjA5MjMwNDM4N30.BX_0z-cpLEhQepJtv4tOFGTNsWiQj8w82E1SPQahQ7U";
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let BETTING_PARTNERS = {
   RESTRICTED: ["CN","KP","SA","IR","QA","AE","KW","BH","OM","PK","AF"],
+  DEFAULT: { name:"International", currency:"", partners:[] }
 };
 
 // ═══════════ TEAMS ═══════════
-const TEAMS = {
-  // International
-  BRA:{name:"Brazil",      flag:"🇧🇷"}, ARG:{name:"Argentina",   flag:"🇦🇷"},
-  FRA:{name:"France",      flag:"🇫🇷"}, ENG:{name:"England",     flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
-  GER:{name:"Germany",     flag:"🇩🇪"}, ESP:{name:"Spain",       flag:"🇪🇸"},
-  POR:{name:"Portugal",    flag:"🇵🇹"}, NED:{name:"Netherlands", flag:"🇳🇱"},
-  URU:{name:"Uruguay",     flag:"🇺🇾"}, MAR:{name:"Morocco",     flag:"🇲🇦"},
-  CRO:{name:"Croatia",     flag:"🇭🇷"}, SEN:{name:"Senegal",     flag:"🇸🇳"},
-  // Club
-  MCI:{name:"Man City",    flag:"🔵"}, LIV:{name:"Liverpool",   flag:"🔴"},
-  ARS:{name:"Arsenal",     flag:"🔴"}, CHE:{name:"Chelsea",     flag:"🔵"},
-  MUN:{name:"Man Utd",     flag:"🔴"}, TOT:{name:"Spurs",       flag:"⚪"},
-  RMA:{name:"Real Madrid", flag:"⚪"}, BAR:{name:"Barcelona",   flag:"🔵"},
-  ATM:{name:"Atletico",    flag:"🔴"}, BAY:{name:"Bayern",      flag:"🔴"},
-  DOR:{name:"Dortmund",    flag:"🟡"}, INT:{name:"Inter",       flag:"🔵"},
-  JUV:{name:"Juventus",    flag:"⚫"}, PSG:{name:"PSG",         flag:"🔵"},
-};
-
+let TEAMS = {};
 const EV_ICONS = {goal:"⚽",yellow:"🟨",red:"🟥",sub:"🔄",var:"📺",pen:"🎯"};
-
-// ═══════════ MATCHES ═══════════
-const MATCHES = [
-  // UCL — LIVE
-  { id:1,  status:"LIVE",     minute:72, league:"ucl",        leagueLabel:"Champions League · QF",
-    home:"RMA", away:"MCI",   hs:2, as:1, venue:"Santiago Bernabeu",
-    odds:{h:1.80,d:3.90,a:4.20},
-    markets:{btts:{y:1.55,n:2.40},ou:{o:1.75,u:2.05},hcp:{h:2.00,d:3.80,a:2.00}},
-    events:[
-      {min:14,type:"goal",  team:"RMA",player:"Vinicius Jr.",detail:"Cut inside and curled into the top corner"},
-      {min:33,type:"goal",  team:"MCI",player:"Haaland",    detail:"Headed home from De Bruyne cross"},
-      {min:56,type:"yellow",team:"MCI",player:"Rodri",      detail:"Cynical foul on Bellingham"},
-      {min:68,type:"goal",  team:"RMA",player:"Bellingham", detail:"Long-range strike — top bins!"},
-    ],
-    stats:{possession:[52,48],shots:[9,8],onTarget:[5,3],corners:[6,4],fouls:[10,12],yellows:[1,2],offsides:[2,1],passes:[340,318]},
-    commentary:[
-      {min:72,text:"Haaland charges into the box — Militao slides in to block at the last moment. Corner to City!"},
-      {min:71,text:"Real Madrid holding firm in their half. Bellingham showing brilliant composure in midfield."},
-      {min:69,text:"GOAL! ⚽ BELLINGHAM! He receives 25 yards out, takes one touch and absolutely rifles it top right. Ederson had no chance. 2-1 Real Madrid!"},
-      {min:68,text:"City starting to find some rhythm. De Bruyne threading balls through the lines."},
-      {min:56,text:"Yellow card for Rodri. Cynical foul to stop a Real counter-attack."},
-    ]},
-
-  // PL — LIVE
-  { id:2,  status:"LIVE",     minute:41, league:"pl",         leagueLabel:"Premier League · GW32",
-    home:"LIV", away:"ARS",   hs:1, as:1, venue:"Anfield",
-    odds:{h:2.10,d:3.30,a:3.50},
-    markets:{btts:{y:1.60,n:2.20},ou:{o:1.85,u:1.95},hcp:{h:2.20,d:3.30,a:2.20}},
-    events:[
-      {min:7, type:"goal",  team:"LIV",player:"Salah",    detail:"One-on-one, slotted left-footed"},
-      {min:29,type:"goal",  team:"ARS",player:"Saka",     detail:"Deflected strike past Alisson"},
-      {min:36,type:"yellow",team:"LIV",player:"Mac Allister",detail:"Late challenge on Odegaard"},
-    ],
-    stats:{possession:[55,45],shots:[6,5],onTarget:[3,2],corners:[3,2],fouls:[6,7],yellows:[1,0],offsides:[1,2],passes:[280,230]},
-    commentary:[
-      {min:41,text:"Arsenal looking to go ahead before halftime. Havertz flicks header just over the bar."},
-      {min:40,text:"Liverpool pace down the left — Gakpo crosses but Salah can't get onto it."},
-      {min:36,text:"Yellow for Mac Allister. The referee isn't taking any nonsense tonight."},
-      {min:29,text:"GOAL! ⚽ SAKA! His cross-shot takes a wicked deflection off Virgil van Dijk and squirms past Alisson. Lovely strike — or was it? 1-1!"},
-    ]},
-
-  // Bundesliga — LIVE
-  { id:3,  status:"LIVE",     minute:58, league:"bundesliga",  leagueLabel:"Bundesliga · GW28",
-    home:"BAY", away:"DOR",   hs:3, as:1, venue:"Allianz Arena",
-    odds:{h:1.45,d:4.50,a:6.50},
-    markets:{btts:{y:1.40,n:2.75},ou:{o:1.50,u:2.50},hcp:{h:1.80,d:3.60,a:3.60}},
-    events:[
-      {min:11,type:"goal",team:"BAY",player:"Kane",   detail:"Penalty kick, low to the left"},
-      {min:24,type:"goal",team:"BAY",player:"Musiala",detail:"Close-range tap-in"},
-      {min:38,type:"goal",team:"DOR",player:"Fullkrug",detail:"Powerful header from corner"},
-      {min:51,type:"goal",team:"BAY",player:"Kane",   detail:"Second goal — right foot volley"},
-    ],
-    stats:{possession:[62,38],shots:[13,5],onTarget:[7,2],corners:[8,2],fouls:[7,11],yellows:[1,2],offsides:[3,1],passes:[420,260]},
-    commentary:[
-      {min:58,text:"Bayern threatening again. Musiala drifts between the lines and feeds Kane — shot blocked!"},
-      {min:55,text:"Dortmund need two goals. Sancho comes on for Brandt as they chase the game."},
-      {min:51,text:"GOAL! ⚽ KANE! His second of the night. Volleys home from a Musiala pull-back. He's on 30 league goals this season!"},
-    ]},
-
-  // La Liga — UPCOMING
-  { id:4,  status:"UPCOMING", minute:null, league:"laliga",   leagueLabel:"La Liga · GW30",
-    home:"BAR", away:"ATM",   hs:null, as:null, kickoff:"20:00 GMT", venue:"Camp Nou",
-    odds:{h:2.00,d:3.40,a:3.70},
-    markets:{btts:{y:1.65,n:2.10},ou:{o:1.90,u:1.90},hcp:{h:2.10,d:3.40,a:2.10}},
-    events:[], stats:null, commentary:[]},
-
-  // Serie A — UPCOMING
-  { id:5,  status:"UPCOMING", minute:null, league:"seriea",   leagueLabel:"Serie A · GW31",
-    home:"INT", away:"JUV",   hs:null, as:null, kickoff:"19:45 GMT", venue:"San Siro",
-    odds:{h:2.20,d:3.10,a:3.40},
-    markets:{btts:{y:1.70,n:2.05},ou:{o:1.85,u:1.95},hcp:{h:2.30,d:3.10,a:2.30}},
-    events:[], stats:null, commentary:[]},
-
-  // Ligue 1 — UPCOMING
-  { id:6,  status:"UPCOMING", minute:null, league:"ligue1",   leagueLabel:"Ligue 1 · GW29",
-    home:"PSG", away:"MUN",   hs:null, as:null, kickoff:"21:00 GMT", venue:"Parc des Princes",
-    odds:{h:1.65,d:3.90,a:5.00},
-    markets:{btts:{y:1.75,n:2.00},ou:{o:1.70,u:2.10},hcp:{h:1.95,d:3.80,a:2.90}},
-    events:[], stats:null, commentary:[]},
-
-  // PL — RESULT
-  { id:7,  status:"FT", minute:90, league:"pl",              leagueLabel:"Premier League · GW31",
-    home:"MCI", away:"TOT",   hs:4, as:0, venue:"Etihad Stadium",
-    odds:{h:1.40,d:5.00,a:8.00},
-    markets:{btts:{y:2.20,n:1.60},ou:{o:1.40,u:2.80},hcp:{h:1.75,d:4.20,a:4.20}},
-    events:[
-      {min:8, type:"goal",team:"MCI",player:"Haaland",  detail:"Header from corner"},
-      {min:22,type:"goal",team:"MCI",player:"De Bruyne",detail:"25-yard rocket"},
-      {min:55,type:"goal",team:"MCI",player:"Foden",    detail:"Solo dribble, slotted home"},
-      {min:78,type:"goal",team:"MCI",player:"Haaland",  detail:"Penalty — second of the night"},
-    ],
-    stats:{possession:[68,32],shots:[18,4],onTarget:[9,1],corners:[10,1],fouls:[8,14],yellows:[1,2],offsides:[4,2],passes:[520,240]},
-    commentary:[]},
-
-  // UCL — RESULT
-  { id:8,  status:"FT", minute:90, league:"ucl",             leagueLabel:"Champions League · QF",
-    home:"BAY", away:"PSG",   hs:2, as:2, venue:"Allianz Arena",
-    note:"PSG win 4-3 on pens",
-    odds:{h:2.10,d:3.60,a:3.40},
-    markets:{btts:{y:1.45,n:2.60},ou:{o:1.55,u:2.40},hcp:{h:2.10,d:3.60,a:2.10}},
-    events:[
-      {min:18,type:"goal",team:"BAY",player:"Kane",     detail:"Penalty"},
-      {min:34,type:"goal",team:"PSG",player:"Mbappe",   detail:"Breakaway finish"},
-      {min:70,type:"goal",team:"PSG",player:"Dembele",  detail:"Long range effort"},
-      {min:88,type:"goal",team:"BAY",player:"Musiala",  detail:"Equaliser — bicycle kick!"},
-    ],
-    stats:{possession:[58,42],shots:[15,10],onTarget:[5,5],corners:[8,3],fouls:[12,10],yellows:[2,2],offsides:[3,2],passes:[410,300]},
-    commentary:[]},
-];
-
-// ═══════════ STANDINGS DATA ═══════════
-const STANDINGS = {
-  pl: {
-    label:"🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League", season:"2024/25",
-    rows:[
-      {t:"MCI",p:32,w:23,d:5,l:4, gf:72,ga:30,pts:74, status:"ucl"},
-      {t:"LIV",p:32,w:22,d:6,l:4, gf:68,ga:33,pts:72, status:"ucl"},
-      {t:"ARS",p:32,w:21,d:7,l:4, gf:65,ga:28,pts:70, status:"ucl"},
-      {t:"CHE",p:32,w:16,d:8,l:8, gf:52,ga:42,pts:56, status:"ucl"},
-      {t:"TOT",p:32,w:14,d:6,l:12,gf:50,ga:52,pts:48, status:"uel"},
-      {t:"MUN",p:32,w:10,d:8,l:14,gf:38,ga:52,pts:38, status:""},
-    ]},
-  ucl: {
-    label:"⭐ Champions League", season:"2024/25 Group Stage",
-    rows:[
-      {t:"RMA",p:8,w:6,d:1,l:1,gf:18,ga:6,pts:19,  status:"ucl"},
-      {t:"BAY",p:8,w:5,d:2,l:1,gf:16,ga:8,pts:17,  status:"ucl"},
-      {t:"MCI",p:8,w:5,d:1,l:2,gf:14,ga:9,pts:16,  status:"ucl"},
-      {t:"PSG",p:8,w:4,d:2,l:2,gf:12,ga:10,pts:14, status:"ucl"},
-      {t:"ARS",p:8,w:3,d:2,l:3,gf:10,ga:11,pts:11, status:"uel"},
-      {t:"DOR",p:8,w:2,d:1,l:5,gf:8, ga:14,pts:7,  status:""},
-      {t:"INT",p:8,w:1,d:2,l:5,gf:5, ga:15,pts:5,  status:"rel"},
-      {t:"JUV",p:8,w:0,d:3,l:5,gf:4, ga:14,pts:3,  status:"rel"},
-    ]},
-  laliga: {
-    label:"🇪🇸 La Liga", season:"2024/25",
-    rows:[
-      {t:"RMA",p:30,w:23,d:4,l:3,gf:72,ga:25,pts:73,status:"ucl"},
-      {t:"BAR",p:30,w:21,d:5,l:4,gf:68,ga:30,pts:68,status:"ucl"},
-      {t:"ATM",p:30,w:18,d:7,l:5,gf:54,ga:28,pts:61,status:"ucl"},
-      {t:"ESP",p:30,w:12,d:8,l:10,gf:42,ga:42,pts:44,status:"uel"},
-    ]},
-  bundesliga: {
-    label:"🇩🇪 Bundesliga", season:"2024/25",
-    rows:[
-      {t:"BAY",p:28,w:22,d:3,l:3,gf:78,ga:28,pts:69,status:"ucl"},
-      {t:"DOR",p:28,w:16,d:5,l:7,gf:56,ga:40,pts:53,status:"ucl"},
-      {t:"RMA",p:28,w:14,d:6,l:8,gf:48,ga:38,pts:48,status:"uel"},
-    ]},
-};
-
-// ═══════════ SCORERS DATA ═══════════
-const SCORERS = {
-  pl: { label:"🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League", data:[
-    {player:"Erling Haaland",team:"MCI",goals:28,assists:6,flag:"🇳🇴"},
-    {player:"Mohamed Salah", team:"LIV",goals:22,assists:14,flag:"🇪🇬"},
-    {player:"Bukayo Saka",   team:"ARS",goals:17,assists:12,flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
-    {player:"Cole Palmer",   team:"CHE",goals:16,assists:10,flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
-    {player:"Phil Foden",    team:"MCI",goals:14,assists:8, flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
-  ]},
-  ucl: { label:"⭐ Champions League", data:[
-    {player:"Harry Kane",    team:"BAY",goals:12,assists:4,flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
-    {player:"Kylian Mbappe", team:"RMA",goals:10,assists:5,flag:"🇫🇷"},
-    {player:"Vinicius Jr.",  team:"RMA",goals:9, assists:7,flag:"🇧🇷"},
-    {player:"Erling Haaland",team:"MCI",goals:8, assists:3,flag:"🇳🇴"},
-    {player:"Jamal Musiala", team:"BAY",goals:7, assists:6,flag:"🇩🇪"},
-  ]},
-  laliga: { label:"🇪🇸 La Liga", data:[
-    {player:"Kylian Mbappe", team:"RMA",goals:24,assists:8,flag:"🇫🇷"},
-    {player:"Robert Lewandowski",team:"BAR",goals:20,assists:5,flag:"🇵🇱"},
-    {player:"Vinicius Jr.",  team:"RMA",goals:18,assists:12,flag:"🇧🇷"},
-    {player:"Antoine Griezmann",team:"ATM",goals:14,assists:9,flag:"🇫🇷"},
-  ]},
-  bundesliga: { label:"🇩🇪 Bundesliga", data:[
-    {player:"Harry Kane",    team:"BAY",goals:30,assists:8,flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
-    {player:"Serhou Guirassy",team:"DOR",goals:18,assists:4,flag:"🇬🇳"},
-    {player:"Jamal Musiala", team:"BAY",goals:14,assists:10,flag:"🇩🇪"},
-  ]},
-};
-
-// ═══════════ BRACKET (World Cup placeholder) ═══════════
-const BRACKET_QF = [
-  {home:"RMA",away:"MCI",hs:2,as:1,winner:"RMA"},
-  {home:"BAY",away:"PSG",hs:2,as:2,winner:"PSG",note:"PSG win 4-3 on pens"},
-  {home:"LIV",away:"ARS",hs:1,as:0,winner:"LIV"},
-  {home:"BAR",away:"ATM",hs:null,as:null,status:"UPCOMING",kickoff:"Apr 23"},
-];
-const BRACKET_SF = [
-  {home:"RMA",away:"PSG",hs:null,as:null,kickoff:"Apr 30"},
-  {home:"LIV",away:"TBD",hs:null,as:null,kickoff:"May 1"},
-];
-const BRACKET_F = [{home:"TBD",away:"TBD",hs:null,as:null,kickoff:"May 31"}];
+let MATCHES = [];
+let STANDINGS = {};
+let SCORERS = {};
+let BRACKET_QF = [];
+let BRACKET_SF = [];
+let BRACKET_F = [];
 
 // ═══════════ STATE ═══════════
 let selectedMatchIdx  = 0;
@@ -717,10 +456,9 @@ let liveMinutes       = {0:72, 1:41, 2:58};
 let oddsLive          = {};
 let userCountry       = "DEFAULT";
 
-MATCHES.forEach((m,i) => { oddsLive[i] = {...m.odds}; });
-
 // ═══════════ INIT ═══════════
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await fetchSupabaseData();
   detectCountry();
   renderMatchList();
   renderDetail();
@@ -730,8 +468,103 @@ document.addEventListener("DOMContentLoaded", () => {
   renderScorers();
   renderBracket();
   updateTicker();
-  startLiveSim();
+  
+  // Hide loader
+  const loader = document.getElementById('global-loader');
+  loader.style.opacity = '0';
+  setTimeout(() => loader.classList.add('d-none'), 500);
 });
+
+async function fetchSupabaseData() {
+  const [
+    { data: dbMatches },
+    { data: partnersData },
+    { data: teamsData },
+    { data: stData },
+    { data: scData }
+  ] = await Promise.all([
+    supabase.from('matches').select('*, leagues(code, label), home:teams!home_team_id(short_name), away:teams!away_team_id(short_name), match_odds(*)'),
+    supabase.from('affiliate_partners').select('*'),
+    supabase.from('teams').select('*'),
+    supabase.from('standings').select('*, leagues(code), teams(short_name)'),
+    supabase.from('scorers').select('*, leagues(code), teams(short_name)')
+  ]);
+
+  if (teamsData) {
+    teamsData.forEach(t => { TEAMS[t.short_name] = { name: t.name, flag: t.flag_url }; });
+  }
+
+  const LEAGUE_NAMES = { pl: "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League", ucl: "⭐ Champions League", laliga: "🇪🇸 La Liga", bundesliga: "🇩🇪 Bundesliga", seriea: "🇮🇹 Serie A", ligue1: "🇫🇷 Ligue 1" };
+  if (stData) {
+    stData.forEach(r => {
+      const lg = r.leagues.code;
+      if (!STANDINGS[lg]) STANDINGS[lg] = { label: LEAGUE_NAMES[lg] || lg, season: "2024/25", rows: [] };
+      STANDINGS[lg].rows.push({
+        t: r.teams.short_name, p: r.played, w: r.won, d: r.drawn, l: r.lost, gf: r.goals_for, ga: r.goals_against, pts: r.points, status: r.status
+      });
+    });
+    Object.keys(STANDINGS).forEach(k => STANDINGS[k].rows.sort((a,b) => b.pts - a.pts));
+  }
+
+  if (scData) {
+    scData.forEach(r => {
+      const lg = r.leagues.code;
+      if (!SCORERS[lg]) SCORERS[lg] = { label: LEAGUE_NAMES[lg] || lg, data: [] };
+      const arr = r.player_name.split(' ');
+      const flagStr = arr.pop(); 
+      const flag = flagStr.replace(/[\(\)]/g, ''); 
+      const name = arr.join(' ');
+      SCORERS[lg].data.push({ player: name, team: r.teams.short_name, goals: r.goals, assists: r.assists, flag: flag });
+    });
+    Object.keys(SCORERS).forEach(k => SCORERS[k].data.sort((a,b) => b.goals - a.goals));
+  }
+
+  if (partnersData) {
+    partnersData.forEach(p => {
+      if (!BETTING_PARTNERS[p.country_code]) {
+         BETTING_PARTNERS[p.country_code] = { name: p.country_code, currency: p.currency, partners: [] };
+      }
+      BETTING_PARTNERS[p.country_code].partners.push({
+        name: p.name, logo: p.logo_emoji, bonus: p.bonus, tag: p.tag, url: p.url
+      });
+    });
+  }
+  
+  if (dbMatches && dbMatches.length > 0) {
+    MATCHES = dbMatches.map(m => ({
+      id: m.id,
+      status: m.status,
+      minute: m.minute || null,
+      league: m.leagues?.code || 'all',
+      leagueLabel: m.leagues?.label || 'Match',
+      home: m.home?.short_name || 'TBD',
+      away: m.away?.short_name || 'TBD',
+      hs: m.home_score,
+      as: m.away_score,
+      venue: m.venue_name,
+      kickoff: m.kickoff_time,
+      odds: m.match_odds && m.match_odds.length > 0 ? {
+        h: m.match_odds[0].home_win || 1.00,
+        d: m.match_odds[0].draw || 1.00,
+        a: m.match_odds[0].away_win || 1.00,
+      } : {h:2.0, d:3.0, a:3.0},
+      markets:{btts:{y:1.50,n:2.50},ou:{o:1.80,u:2.00},hcp:{h:2.00,d:3.00,a:2.00}},
+      events: [], stats: null, commentary: []
+    }));
+  }
+  
+  MATCHES.forEach((m,i) => { oddsLive[i] = {...m.odds}; });
+  
+  // Setup Realtime Sync
+  supabase.channel('matches_updates')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, payload => {
+      fetchSupabaseData().then(() => {
+        renderMatchList();
+        updateTicker();
+        if(document.getElementById('detail-panel')) renderDetail();
+      });
+    }).subscribe();
+}
 
 // ═══════════ COUNTRY DETECTION ═══════════
 async function detectCountry() {
